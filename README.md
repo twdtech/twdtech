@@ -5,8 +5,8 @@ I am TheWinDev, a lil teen developer with love for electronics, application deve
 My current projects are:
 - KaliCMD for Windows
 - my IP Checker which is outdated xD
-- and my Windows Tool PE builder *which apprently isn't here on github...*
-- Splitix File Splitter
+- my Windows Tool PE builder *which apprently isn't here on github...*
+- and Splitix File Splitter
 
 I like servers and high performance computing :D  
 Thats all about me ^^

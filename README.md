@@ -11,5 +11,5 @@ My current projects are:
 I like servers and high performance computing :D  
 Thats all about me ^^
 
-Oh, and here's my discord if you want to talk with me: TheWinDev#1660  
+Oh, and here's my discord if you want to talk with me: thewindev  
 Have fun with my projects, TheWinDev out :D

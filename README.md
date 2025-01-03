@@ -5,6 +5,9 @@ I am TheWinDev, a lil teen developer with love for electronics, application deve
 I am the (currently) only developer and maintainer of the gserverOS.
 My most used languages are C and C++.
 
+Most active project:
+- OpenImageMirror
+
 Some other infos about me:
 - I like servers
 - I like high performance computing

